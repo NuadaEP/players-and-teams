@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\TeamController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +27,7 @@ Route::post('/player', [PlayerController::class, 'store']);
 Route::put('/player/{id}', [PlayerController::class, 'update']);
 Route::delete('/player/{id}', [PlayerController::class, 'destroy']);
 
+Route::post('/team', TeamController::class);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
