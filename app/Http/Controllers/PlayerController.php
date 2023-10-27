@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreUpdatePlayer;
+use App\Http\Resources\PlayerResource;
 use Illuminate\Http\Request;
+use App\Models\Player;
+use App\Models\Skill;
 
 class PlayerController extends Controller
 {
@@ -11,26 +15,32 @@ class PlayerController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $players = Player::paginate();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return PlayerResource::collection($players);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreUpdatePlayer $request)
     {
-        $body = $request->only(['name', 'position', 'playerSkills']);
-        // print_r($name);
+        $data = $request->validated();
 
-        return response()->json($body);
+        $player = Player::create([
+            'name' => $data['name'],
+            'position' => $data['position'],
+        ]);
+
+        foreach ($data['playerSkills'] as $value) {
+            Skill::create([
+                'skill' => $value['skill'],
+                'value' => $value['value'],
+                'player_id' => $player['id']
+            ]);
+        }
+
+        return new PlayerResource($player);
     }
 
     /**
@@ -38,30 +48,62 @@ class PlayerController extends Controller
      */
     public function show(string $id)
     {
-        //
-    }
+        $player = Player::find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        if (!$player)
+        {
+            return response()->json([
+                'message' => 'Record not found',
+            ], 400);
+        }
+
+        return PlayerResource::make($player);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(StoreUpdatePlayer $request, string $id)
     {
-        //
+        $data = $request->validated();
+
+        $player = Player::find($id);
+
+        $player->name = $data['name'];
+        $player->position = $data['position'];
+
+        $player->save();
+
+        return PlayerResource::make($player);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        //
+        $token = $request->header('Authorization');
+
+        if (!$token)
+        {
+            return response()->json([
+                'success' => false
+            ], 400);
+        }
+
+        $bearerToken = explode(' ', $token);
+
+        if ($bearerToken[0] !== 'Bearer' || $bearerToken[1] !== 'ABC123@#@#@#')
+        {
+            return response()->json([
+                'success' => false
+            ], 400);
+        }
+
+        Player::destroy($id);
+
+        return response()->json([
+            'success' => true
+        ]);
     }
 }
